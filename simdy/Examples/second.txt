@@ -1,0 +1,15 @@
+func g() {
+
+}
+
+func f() {
+
+}
+
+func foo(var1:u32, var2:u32) {
+    if (var1 > var2) {
+        g()
+    } else {
+        f()
+    }
+}

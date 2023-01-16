@@ -1,3 +1,4 @@
 AST: 
-BinOp Assignment (Variable "var0" (Type "double")) (Decimal 2.56)
-Function "foo" [Variable "var1" (Type "u32"),Variable "var2" (Type "i16"),Variable "var3" (Type "double")] [BinOp Assignment (Variable "var4" (Type "u32")) (Int 3)]
+BinOp Assignment (DefVar "var0" DOUBLE) (Decimal 2.56)
+Function "f" [] []
+Function "foo" [DefVar "var1" U32,DefVar "var2" I16,DefVar "var3" DOUBLE] [BinOp Assignment (DefVar "var4" U32) (Int 3),BinOp Assignment (DefVar "var5" FLOAT) (Decimal 4.41),BinOp Assignment (Variable "var5") (Variable "var4")]

@@ -22,7 +22,8 @@ lexer = Tok.makeTokenParser style where
         ]
     names = [
         "func", "load", "sizeof", "i32", "u32", 
-        "i16", "u16", "float", "double"
+        "i16", "u16", "float", "double", "if",
+        "else", "for", "while"
         ]
     style = emptyDef {
         Tok.commentLine = "//",
