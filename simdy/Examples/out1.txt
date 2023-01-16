@@ -1,0 +1,3 @@
+AST: 
+BinOp Assignment (Variable "var0" (Type "double")) (Decimal 2.56)
+Function "foo" [Variable "var1" (Type "u32"),Variable "var2" (Type "i16"),Variable "var3" (Type "double")] [BinOp Assignment (Variable "var4" (Type "u32")) (Int 3)]

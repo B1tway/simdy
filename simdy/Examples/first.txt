@@ -1,0 +1,7 @@
+var0:double = 2.56
+
+func foo(var1:u32, var2:i16, var3:double) {
+    var4:u32 = 3
+    var5:float = 4.41
+    3=7
+}
