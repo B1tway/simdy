@@ -1,4 +1,4 @@
-func foo(x:i32, arrPtr:ptr<ptr<ptr<u32>>>, size:u16) {
+func foo(x:i32, arrPtr:ptr<u32>, size:u16) {
     i:u16 = 0
     while (i < size) {
         arrPtr[i] = bitcast<u32>x

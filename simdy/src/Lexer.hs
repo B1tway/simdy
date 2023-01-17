@@ -17,12 +17,14 @@ lexer = Tok.makeTokenParser style where
     ops = [
         "+", "++", "*", "-", "--",
         "/", "%", "~",  "||","&&", 
-        "<", ">", "==", "!=", "=", ":" 
+        "<", ">", "==", "!=", "=", 
+        ":", "(", ")", "{", "}",
+        "[", "]", "," 
         ]
     names = [
         "func", "load", "store","sizeof", "bitcast", "i32", "u32", 
         "i16", "u16", "float", "double", "if",
-        "else", "for", "while", "ptr"
+        "else", "for", "while", "ptr", "vec"
         ]
     style = emptyDef {
         Tok.commentLine = "//",

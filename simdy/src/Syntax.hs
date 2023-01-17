@@ -1,4 +1,4 @@
-module Syntax (Expr(..), Op(..), Type(..), PrimitiveType(..), Name, UnaryOp(..)) where
+module Syntax (Expr(..), Op(..), Type(..), PrimitiveType(..), Name, UnaryOp(..), MemoryOp(..)) where
 import Data.Semigroup (Min(Min))
 import GHC.Generics (Associativity(LeftAssociative))
 
@@ -17,7 +17,7 @@ data Expr
     | While Expr [Expr]
     | IndexOp Expr Expr
     | CastOp Type Expr
-    | MemOp Name Type Expr Expr 
+    | MemOp MemoryOp
     deriving (Eq, Ord, Show)
 
 data Type = Primitive  PrimitiveType | Ptr Type | VectType Expr PrimitiveType  deriving (Eq, Ord, Show)
@@ -30,3 +30,5 @@ data Op
     AND deriving (Eq, Ord, Show) 
 
 data UnaryOp = Increment | Decrement | UnMinus deriving(Eq, Ord, Show)
+
+data MemoryOp = Load Type Expr Expr | Store Type Expr Expr deriving (Eq, Ord, Show)

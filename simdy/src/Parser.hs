@@ -1,3 +1,4 @@
+--{-# LANGUAGE BlockArguments #-}
 module Parser (parseToplevel) where
 
 import Text.Parsec
@@ -8,9 +9,10 @@ import qualified Text.Parsec.Token as Tok
 import qualified Data.Functor.Identity
 
 import Lexer ( lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal', angles, brackets )
-import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..),Name, UnaryOp(..) )
+import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..),Name, UnaryOp(..), MemoryOp(..) )
 import Data.Maybe (fromMaybe)
 import Control.Exception (bracket)
+import Control.Applicative ()
 
 
 binary :: String -> Op -> Ex.Assoc -> Ex.Operator String () Data.Functor.Identity.Identity Expr
@@ -35,11 +37,13 @@ factor :: Parser Expr
 factor =
     try idx
     <|> function
+    <|> try variableDef
     <|> try cast
+    <|> try load
+    <|> try store
     <|> try decimal
     <|> try int
     <|> try call
-    <|> try variableDef
     <|> try variable
     <|> try ifelse
     <|> try while
@@ -51,51 +55,66 @@ int = do Int <$> int'
 decimal :: Parser Expr
 decimal = do Decimal <$> decimal'
 
-variableI32 :: Parser Type
+variableI32 :: Parser PrimitiveType
 variableI32 = do
     varType <- reserved "i32"
-    return $ Primitive I32
+    return I32
 
-variableU32 :: Parser Type
+variableU32 :: Parser PrimitiveType
 variableU32 = do
     varType <- reserved "u32"
-    return $ Primitive U32
+    return U32
 
-variableI16 :: Parser Type
+variableI16 :: Parser PrimitiveType
 variableI16 = do
     varType <- reserved "i16"
-    return $ Primitive I16
+    return I16
 
-variableU16 :: Parser Type
+variableU16 :: Parser PrimitiveType
 variableU16 = do
     varType <- reserved "u16"
-    return $ Primitive U16
+    return U16
 
-variableDouble :: Parser Type
+variableDouble :: Parser PrimitiveType
 variableDouble = do
     varType <- reserved "double"
-    return $ Primitive DOUBLE
+    return DOUBLE
 
-variableFloat :: Parser Type
+variableFloat :: Parser PrimitiveType
 variableFloat = do
     varType <- reserved "float"
-    return $ Primitive FLOAT
+    return FLOAT
+
+parsePrimitive :: Parser PrimitiveType
+parsePrimitive = do
+    try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat
 
 variablePtr :: Parser Type
 variablePtr = do
     p <- reserved "ptr"
-    ptrType <- angles $ try variablePtr <|> try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> try variableFloat
+    ptrType <- angles $ try variablePtr <|> (Primitive <$> parsePrimitive)
     return $ Ptr ptrType
+
+-- awful
+variableVec :: Parser Type
+variableVec = do
+    reserved "vec"
+    reservedOp "<"
+    sz <- int
+    reservedOp ","
+    ty <- parsePrimitive
+    reservedOp ">"
+    return $ VectType sz ty
 
 variableDef :: Parser Expr
 variableDef = do
     varName <- identifier
     reservedOp ":"
-    varType <- try variablePtr <|> try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat 
+    varType <- try variablePtr <|> try variableVec <|> (Primitive <$> parsePrimitive)
     return $ DefVar varName varType
 
 variable :: Parser Expr
-variable = do 
+variable = do
     Variable <$> identifier
 
 expr :: Parser Expr
@@ -135,14 +154,35 @@ while = do
 cast :: Parser Expr
 cast = do
     reserved "bitcast"
-    typeId <- angles $ try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat
+    typeId <- angles $ try variablePtr <|> try variableVec <|> (Primitive <$> parsePrimitive)
     CastOp typeId <$> (try idx <|> variable)
 
 idx :: Parser Expr
-idx = do 
+idx = do
     var <- variable
     pos <- brackets expr
     return $ IndexOp var pos
+
+memOp' :: Parser ((Type, Expr), Expr)
+memOp' = do
+    ty <- angles $ try variablePtr <|> try variableVec <|> (Primitive <$> parsePrimitive)
+    reservedOp "("
+    addr <- variable
+    reservedOp ","
+    off <- try variable <|> int
+    reservedOp ")"
+    return ((ty, addr), off)
+
+load :: Parser Expr
+load = do
+    reserved "load"
+    MemOp . uncurry (uncurry Load) <$> memOp'
+
+store :: Parser Expr
+store = do
+    reserved "store"
+    MemOp . uncurry (uncurry Store) <$> memOp'
+
 
 defn :: Parser Expr
 defn =
