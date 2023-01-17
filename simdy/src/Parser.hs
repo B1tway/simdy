@@ -83,8 +83,8 @@ variableFloat = do
 
 variablePtr :: Parser ExpType
 variablePtr = do
-    ptrType <- try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> try variableFloat
-    reservedOp "*"
+    p <- reserved "ptr"
+    ptrType <- angles $ try variablePtr <|> try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> try variableFloat
     return $ Ptr ptrType
 
 variableDef :: Parser Expr

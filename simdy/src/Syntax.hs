@@ -17,9 +17,10 @@ data Expr
     | While Expr [Expr]
     | IndexOp Expr Expr
     | CastOp ExpType Expr
+    | MemOp Name ExpType Expr Expr
     deriving (Eq, Ord, Show)
 
-data ExpType = I32 | U32 | I16 | U16 | DOUBLE | FLOAT | Ptr ExpType deriving (Eq, Ord, Show)
+data ExpType = I32 | U32 | I16 | U16 | DOUBLE | FLOAT | Ptr ExpType | VectType Expr ExpType  deriving (Eq, Ord, Show)
 
 data Op 
     = Plus | Minus | Times | Divide | Assign | 
