@@ -24,6 +24,12 @@ dependencies:
 - parsec
 - haskeline
 - mtl
+- bytestring 
+- llvm-hs
+- llvm-hs-pretty
+- llvm-hs-pure
+- containers
+- utf8-string
 
 ghc-options:
 - -Wall
@@ -52,7 +58,12 @@ executables:
     - parsec
     - haskeline
     - mtl
-
+    - bytestring 
+    - llvm-hs
+    - llvm-hs-pretty
+    - llvm-hs-pure
+    - containers
+    - utf8-string
 tests:
   simdy-test:
     main:                Spec.hs
@@ -66,3 +77,4 @@ tests:
     - parsec
     - haskeline
     - mtl
+ 
