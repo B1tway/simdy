@@ -1,2 +1,2 @@
 AST: 
-Function "foo" [DefVar "x" I32,DefVar "arrPtr" (Ptr (Ptr (Ptr U32))),DefVar "size" U16] [BinOp Assign (DefVar "i" U16) (Int 0),While (BinOp Less (Variable "i") (Variable "size")) [BinOp Assign (IndexOp (Variable "arrPtr") (Variable "i")) (CastOp U32 (Variable "x")),UnOp Increment (Variable "i")]]
+Function "foo" [DefVar "x" (Primitive I32),DefVar "arrPtr" (Ptr (Ptr (Ptr (Primitive U32)))),DefVar "size" (Primitive U16)] [BinOp Assign (DefVar "i" (Primitive U16)) (Int 0),While (BinOp Less (Variable "i") (Variable "size")) [BinOp Assign (IndexOp (Variable "arrPtr") (Variable "i")) (CastOp (Primitive U32) (Variable "x")),UnOp Increment (Variable "i")]]

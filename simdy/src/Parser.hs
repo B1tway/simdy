@@ -8,7 +8,7 @@ import qualified Text.Parsec.Token as Tok
 import qualified Data.Functor.Identity
 
 import Lexer ( lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal', angles, brackets )
-import Syntax ( Op(..), Expr(..), ExpType(..), Name, UnaryOp(..) )
+import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..),Name, UnaryOp(..) )
 import Data.Maybe (fromMaybe)
 import Control.Exception (bracket)
 
@@ -51,37 +51,37 @@ int = do Int <$> int'
 decimal :: Parser Expr
 decimal = do Decimal <$> decimal'
 
-variableI32 :: Parser ExpType
+variableI32 :: Parser Type
 variableI32 = do
     varType <- reserved "i32"
-    return  I32
+    return $ Primitive I32
 
-variableU32 :: Parser ExpType
+variableU32 :: Parser Type
 variableU32 = do
     varType <- reserved "u32"
-    return  U32
+    return $ Primitive U32
 
-variableI16 :: Parser ExpType
+variableI16 :: Parser Type
 variableI16 = do
     varType <- reserved "i16"
-    return  I16
+    return $ Primitive I16
 
-variableU16 :: Parser ExpType
+variableU16 :: Parser Type
 variableU16 = do
     varType <- reserved "u16"
-    return  U16
+    return $ Primitive U16
 
-variableDouble :: Parser ExpType
+variableDouble :: Parser Type
 variableDouble = do
     varType <- reserved "double"
-    return DOUBLE
+    return $ Primitive DOUBLE
 
-variableFloat :: Parser ExpType
+variableFloat :: Parser Type
 variableFloat = do
     varType <- reserved "float"
-    return FLOAT
+    return $ Primitive FLOAT
 
-variablePtr :: Parser ExpType
+variablePtr :: Parser Type
 variablePtr = do
     p <- reserved "ptr"
     ptrType <- angles $ try variablePtr <|> try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> try variableFloat
