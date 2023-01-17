@@ -7,31 +7,42 @@ import qualified Text.Parsec.Expr as Ex
 import qualified Text.Parsec.Token as Tok
 import qualified Data.Functor.Identity
 
-import Lexer ( lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal' )
-import Syntax ( Op(..), Expr(..), ExpType(..) )
+import Lexer ( lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal', angles, brackets )
+import Syntax ( Op(..), Expr(..), ExpType(..), Name, UnaryOp(..) )
 import Data.Maybe (fromMaybe)
+import Control.Exception (bracket)
 
 
 binary :: String -> Op -> Ex.Assoc -> Ex.Operator String () Data.Functor.Identity.Identity Expr
 binary s f  = Ex.Infix (reservedOp s >> return (BinOp f))
 
+
+prefix :: String -> UnaryOp -> Ex.Operator String () Data.Functor.Identity.Identity Expr
+prefix s f = Ex.Prefix (reservedOp s >> return (UnOp f))
+
 table :: [[Ex.Operator String () Data.Functor.Identity.Identity Expr]]
 table = [
+    [prefix "-" UnMinus, prefix "++" Increment, prefix "--" Decrement],
     [binary "*" Times Ex.AssocLeft, binary "/" Divide Ex.AssocLeft],
     [binary "+" Plus Ex.AssocLeft, binary "-" Minus Ex.AssocLeft],
     [binary "<" Less Ex.AssocNone, binary ">" Greater Ex.AssocNone],
-    [binary "=" Assignment Ex.AssocRight]
+    [binary "==" Equal Ex.AssocLeft, binary "!=" NotEqual Ex.AssocLeft],
+    [binary "||" OR Ex.AssocLeft, binary "&&" AND Ex.AssocLeft],
+    [binary "=" Assign Ex.AssocRight]
     ]
 
 factor :: Parser Expr
 factor =
-    try function
+    try idx
+    <|> function
+    <|> try cast
     <|> try decimal
     <|> try int
     <|> try call
     <|> try variableDef
     <|> try variable
-    <|> try ifExpr
+    <|> try ifelse
+    <|> try while
     <|> parens expr
 
 int :: Parser Expr
@@ -70,15 +81,22 @@ variableFloat = do
     varType <- reserved "float"
     return FLOAT
 
+variablePtr :: Parser ExpType
+variablePtr = do
+    ptrType <- try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> try variableFloat
+    reservedOp "*"
+    return $ Ptr ptrType
+
 variableDef :: Parser Expr
 variableDef = do
     varName <- identifier
     reservedOp ":"
-    varType <- try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat
+    varType <- try variablePtr <|> try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat 
     return $ DefVar varName varType
 
 variable :: Parser Expr
-variable = do Variable <$> identifier
+variable = do 
+    Variable <$> identifier
 
 expr :: Parser Expr
 expr = Ex.buildExpressionParser table factor
@@ -97,8 +115,8 @@ call = do
     args <- parens $ commaSep variableDef
     return $ Call name args
 
-ifExpr :: Parser Expr
-ifExpr = do
+ifelse :: Parser Expr
+ifelse = do
     reserved "if"
     cond <- parens expr
     tr <- braces $ many expr
@@ -106,6 +124,25 @@ ifExpr = do
         reserved "else"
         braces $ many expr
     return $ If cond tr (fromMaybe [] fl)
+
+while :: Parser Expr
+while = do
+    reserved "while"
+    cond <- parens expr
+    body <- braces $ many expr
+    return $ While cond body
+
+cast :: Parser Expr
+cast = do
+    reserved "bitcast"
+    typeId <- angles $ try variableI32 <|> try variableU32 <|> try variableI16 <|> try variableU16 <|> try variableDouble <|> variableFloat
+    CastOp typeId <$> (try idx <|> variable)
+
+idx :: Parser Expr
+idx = do 
+    var <- variable
+    pos <- brackets expr
+    return $ IndexOp var pos
 
 defn :: Parser Expr
 defn =

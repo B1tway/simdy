@@ -1,4 +1,4 @@
-module Lexer (lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal') where
+module Lexer (lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal', angles, brackets) where
 
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
@@ -16,12 +16,11 @@ lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style where
     ops = [
         "+", "++", "*", "-", "--",
-        "/", "%", "~", "|", "||",
-        "&", "&&", "<", ">", "==",
-        "=", ":"
+        "/", "%", "~",  "||","&&", 
+        "<", ">", "==", "!=", "=", ":" 
         ]
     names = [
-        "func", "load", "sizeof", "i32", "u32", 
+        "func", "load", "store","sizeof", "bitcast", "i32", "u32", 
         "i16", "u16", "float", "double", "if",
         "else", "for", "while"
         ]
