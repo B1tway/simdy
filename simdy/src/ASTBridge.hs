@@ -40,7 +40,7 @@ toLLVMType (Primitive t) = typeMap ! t
 toLLVMType (Ptr t) = ptr (toLLVMType t)
 toLLVMType (VectType e t) = VectorType {nVectorElements = exprToInt e, elementType = typeMap ! t}
 
--- allocateDef (Expr (DefVar name' type')) = allocate (toLLVMType type') 'named' toShort name
+-- allocateDef (Syn.DefVar name_ type_) = allocate (toLLVMType type_) 'modify' toShort' name_
 
 
 cmpOps :: [String]
