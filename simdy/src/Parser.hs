@@ -50,7 +50,7 @@ factor =
     <|> parens expr
 
 int :: Parser Expr
-int = do Int <$> int'
+int = do Number <$> int'
 
 decimal :: Parser Expr
 decimal = do Decimal <$> decimal'

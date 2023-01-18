@@ -25,12 +25,14 @@ source-repository head
 
 library
   exposed-modules:
+      ASTBridge
+      Builder
+      BuilderUtils
       Lexer
       Lib
       Parser
       StringUtils
       Syntax
-      Utils
   other-modules:
       Paths_simdy
   hs-source-dirs:

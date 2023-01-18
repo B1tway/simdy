@@ -7,7 +7,7 @@ type Name = String
 data Expr 
     = Variable Name
     | DefVar Name Type
-    | Int Integer
+    | Number Integer
     | Decimal Double
     | UnOp UnaryOp Expr
     | BinOp Op Expr Expr
