@@ -266,6 +266,9 @@ fdiv a b = instr float $ FDiv noFastMathFlags a b []
 fcmp :: FP.FloatingPointPredicate -> Type -> Operand -> Operand -> Codegen Operand
 fcmp cond t a b = instr t $ FCmp cond a b []
 
+bitcast :: Type -> Operand -> Codegen Operand
+bitcast t a = instr t $ BitCast a t []
+
 cons :: C.Constant -> Operand
 cons = ConstantOperand
 
