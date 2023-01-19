@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ASTBridge where
 
 import           Data.Map.Strict                 ((!))
@@ -16,6 +18,9 @@ import qualified LLVM.AST.IntegerPredicate       as IPredicats
 import           Syntax as Syn
 import Data.ByteString.Short (toShort)
 import LLVM.AST.Operand (DIGlobalVariable(type'))
+-- import Codegen (LLVM)
+import qualified Data.Kind as LLVM.AST
+
 
 
 typeMap :: Map.Map PrimitiveType LLVM.AST.Type.Type
@@ -40,49 +45,41 @@ toLLVMType (Primitive t) = typeMap ! t
 toLLVMType (Ptr t) = ptr (toLLVMType t)
 toLLVMType (VectType e t) = VectorType {nVectorElements = exprToInt e, elementType = typeMap ! t}
 
--- allocateDef (Syn.DefVar name_ type_) = allocate (toLLVMType type_) 'modify' toShort' name_
-
-
 cmpOps :: [String]
 cmpOps = [">", "<", "==", "!=", "<=", ">="]
 
 opTable ::
      MonadIRBuilder m
-  => Map.Map PrimitiveType (Map.Map String (Operand -> Operand -> m Operand))
+  => Map.Map LLVM.AST.Type.Type (Map.Map Op (Operand -> Operand -> m Operand))
 opTable =
   Map.fromList
-    [ (I32, intMap)
-    , (U32, intMap)
-    , (I16, intMap)
-    , (U16, intMap)
-    , (FLOAT, floatMap)
-    , (DOUBLE, floatMap)
+    [ (i16, intMap)
+    , (i32, intMap)
+    , (float, floatMap)
+    , (double, floatMap)
     ]
   where
     [intMap, floatMap] =
       map
         Map.fromList
-        [ [ ("+", add)
-          , ("-", sub)
-          , ("*", mul)
-          , ("<", icmp IPredicats.SLT)
-          , (">", icmp IPredicats.SGT)
-          , ("==", icmp IPredicats.EQ)
-          , ("!=", icmp IPredicats.NE)
-          , ("<=", icmp IPredicats.SLE)
-          , (">=", icmp IPredicats.SGE)
+        [ [ (Plus, add)
+          , (Minus, sub)
+          , (Times, mul)
+          , (Less, icmp IPredicats.SLT)
+          , (Greater, icmp IPredicats.SGT)
+          , (Equal, icmp IPredicats.EQ)
+          , (NotEqual, icmp IPredicats.NE)
           ]
-        , [ ("+", fadd)
-          , ("-", fsub)
-          , ("*", fmul)
-          , ("<", fcmp FPredicats.OLT)
-          , (">", fcmp FPredicats.OGT)
-          , ("==", fcmp FPredicats.OEQ)
-          , ("!=", fcmp FPredicats.ONE)
-          , ("<=", fcmp FPredicats.OLE)
-          , (">=", fcmp FPredicats.OGE)
+        , [ (Plus, fadd)
+          , (Minus, fsub)
+          , (Times, fmul)
+          , (Less, fcmp FPredicats.OLT)
+          , (Greater, fcmp FPredicats.OGT)
+          , (Equal, fcmp FPredicats.OEQ)
+          , (NotEqual, fcmp FPredicats.ONE)
           ]
         ]
 
 
+findOperation :: MonadIRBuilder m => LLVM.AST.Type.Type -> Op -> Operand -> Operand -> m Operand
 findOperation type_ op = (opTable ! type_) ! op

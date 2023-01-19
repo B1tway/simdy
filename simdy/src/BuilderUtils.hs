@@ -17,6 +17,9 @@ import LLVM.IRBuilder.Constant hiding (double)
 import qualified LLVM.IRBuilder.Instruction as I
 
 import StringUtils
+import qualified Syntax as Syn
+import ASTBridge (toLLVMType)
+import Syntax (Expr)
 
 addrSpace :: AddrSpace
 addrSpace = AddrSpace 0
@@ -26,6 +29,14 @@ iSize = 32
 
 alignment :: Word32
 alignment = 4
+
+
+
+allocateDef :: MonadIRBuilder m => Syn.Expr -> m Operand
+allocateDef (Syn.DefVar varname vartype) = named (allocateT vartype) (toShort' varname)
+
+allocateT :: MonadIRBuilder m => Syn.Type -> m Operand
+allocateT t = allocate (toLLVMType t)
 
 integerConstant :: Integer -> Operand
 integerConstant i = ConstantOperand (C.Int {C.integerBits = iSize, C.integerValue = i})
@@ -60,6 +71,12 @@ globalName name = Name (toShort' name)
 reference :: AST.Type -> String -> Operand
 reference type_ name = LocalReference type_ (refName name)
 
+pointerTo :: Syn.Type -> Type
+pointerTo type_ = AST.PointerType (toLLVMType type_) addrSpace
+
+referenceVar :: Syn.Type -> String -> Operand
+referenceVar varType = reference (pointerTo varType)
+
 referenceInt :: String -> Operand
 referenceInt = reference i32
 
@@ -68,7 +85,7 @@ referenceIntPointer = reference integerPointer
 
 makeFuncRef :: String -> Operand
 makeFuncRef funcName = ConstantOperand (C.GlobalReference funcType $ globalName funcName)
-  where funcType = FunctionType i32 [] False
+  where funcType = FunctionType void [] False
 
 bodyLabel = toShort' "Body"
 
@@ -76,4 +93,5 @@ argName = ("arg_" ++)
 
 intToFloat op = sitofp op double
 
+floatToInt :: MonadIRBuilder m => Operand -> m Operand
 floatToInt op = fptosi op i32
