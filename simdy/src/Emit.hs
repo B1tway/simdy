@@ -39,14 +39,34 @@ import LLVM.IRBuilder (int32, double)
 import Syntax (PrimitiveType(I32))
 import LLVM.IRBuilder.Module
 import LLVM.IRBuilder.Monad
+import qualified Syntax as Syn
 
 type NameMap = Map.Map String AST.Operand
 initNameMap :: NameMap
 initNameMap = Map.empty
 
-emit :: (LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
+emit :: (MonadFix m, LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
 emit (Syn.Number i) = pure(int32 i)
 emit (Syn.Decimal f) = pure(double f)
+emit (Syn.If cond (blockTrue) (blockFalse)) =
+    mdo
+      condition <- emit cond
+      resultPointer <- allocate (typeOf condition) 
+      condBr condition trueBranch falseBranch
+      trueBranch <- buildBranch "true" blockTrue resultPointer $ Just mainBr
+      falseBranch <- buildBranch "false" blockFalse resultPointer $ Just mainBr
+      mainBr <- emitExit resultPointer
+      return condition
+emit (Syn.While cond bodyBlock) = 
+  mdo
+    resultPointer <- allocate (typeOf condition) 
+    br whileStart  -- we need terminator instruction at the end of the previous block, it will be optimized away
+    whileStart <- block `named` "whileStart"
+    condition <- emit cond
+    condBr condition whileBody mainBr
+    whileBody <- buildBranch "whileBody" bodyBlock resultPointer $ Just whileStart  -- after executing jump to beginning
+    mainBr <- emitExit resultPointer
+    return condition
 emit (Syn.Variable varname) =
     do
         varMap <- get
@@ -59,11 +79,21 @@ emit var@(Syn.DefVar varname vartype) =
         let newVarMap = Map.insert varname newVar varMap
         put newVarMap
         return newVar
-emit (Syn.BinOp Syn.Assign a b) =
+emit (Syn.BinOp Syn.Assign a@(Syn.DefVar varname vartype) b) =
     do
         varOperand <- emit a
+        varMap <- get
+        let varAddress = varMap Map.! varname
         value <- emit b
-        store varOperand value
+        store varAddress value
+        return value
+emit (Syn.BinOp Syn.Assign a@(Syn.Variable varname) b) =
+    do
+        -- varOperand <- emit a
+        varMap <- get
+        let varAddress = varMap Map.! varname
+        value <- emit b
+        store varAddress value
         return value
 emit (Syn.BinOp op a b) =
     do
@@ -97,14 +127,29 @@ emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
         load newAddr
 emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
-buildCodeBlock :: (MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => [Syn.Expr] -> m AST.Operand
+emitExit resultPointer = do
+  mainBr <- block `named` bodyLabel
+  return mainBr
+
+buildBranch name codeBlock resultPointer mNext =
+  do
+    branch <- block `named` name
+    blockR <- buildCodeBlock codeBlock
+    -- store resultPointer blockR
+    case mNext of
+      Nothing -> pure ()
+      Just label -> br label
+    return branch
+
+
+buildCodeBlock :: (MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => [Syn.Expr] -> m AST.Operand
 buildCodeBlock exprBlock = do
   -- Steps of codegen
   ops <- mapM emit exprBlock
   return (last ops)
 
 -- funcBodyBuilder :: (MonadFix m, MonadIRBuilder m) => [Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
-funcBodyBuilder :: (MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
+funcBodyBuilder :: (MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
 funcBodyBuilder bodyTokens args = funcBody
     where funcBody argsOperands = do
             named block bodyLabel
@@ -124,7 +169,7 @@ allocArgs [] = pure ()
 
 
 -- buildFunction :: MonadModuleBuilder m => Syn.Expr -> m AST.Operand
-buildFunction :: (MonadModuleBuilder m,
+buildFunction :: (MonadFix m, MonadModuleBuilder m,
  MonadState (Map.Map String AST.Operand) m) => Syn.Expr -> m AST.Operand
 buildFunction func@(Syn.Function name argsNames body) =
   function(AST.Name fname) fargs VoidType funcBody
@@ -134,8 +179,7 @@ buildFunction func@(Syn.Function name argsNames body) =
     funcBody = funcBodyBuilder body argsNames
 
 
--- parseTopLevel :: (MonadModuleBuilder m, MonadFix m) => [Syn.Expr] -> m ()
-parseTopLevel :: (MonadModuleBuilder m, MonadState (Map.Map String AST.Operand) m) => [Syn.Expr] -> m ()
+parseTopLevel :: (MonadFix m, MonadModuleBuilder m, MonadState (Map.Map String AST.Operand) m) => [Syn.Expr] -> m ()
 parseTopLevel (e:es) = do
   buildFunction e >> pure ()
   parseTopLevel es
