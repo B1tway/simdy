@@ -18,7 +18,6 @@ import qualified LLVM.AST.IntegerPredicate       as IPredicats
 import           Syntax as Syn
 import Data.ByteString.Short (toShort)
 import LLVM.AST.Operand (DIGlobalVariable(type'))
--- import Codegen (LLVM)
 import qualified Data.Kind as LLVM.AST
 
 

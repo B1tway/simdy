@@ -28,6 +28,7 @@ library
       ASTBridge
       BuilderUtils
       Codegen
+      Compiler
       Emit
       Lexer
       Lib

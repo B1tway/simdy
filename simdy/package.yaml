@@ -30,6 +30,7 @@ dependencies:
 - llvm-hs-pure
 - containers
 - utf8-string
+- text
 
 ghc-options:
 - -Wall
