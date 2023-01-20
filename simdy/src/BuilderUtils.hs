@@ -60,7 +60,7 @@ load pointer = I.load pointer alignment
 
 store :: MonadIRBuilder m => Operand -> Operand -> m ()
 store pointer = I.store pointer alignment
-
+  
 saveInt :: MonadIRBuilder m => Integer -> m Operand
 saveInt value = do
   pointer <- allocateInt

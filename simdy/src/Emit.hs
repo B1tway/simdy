@@ -33,7 +33,7 @@ import ASTBridge
 
 import StringUtils
 import LLVM.AST.Typed (getElementType, Typed (typeOf), getElementPtrType)
-import LLVM.AST.Type (i32, float, void)
+import LLVM.AST.Type (i32, float, void, i64)
 import BuilderUtils
 import LLVM.IRBuilder (int32, double)
 import Syntax (PrimitiveType(I32))
@@ -44,7 +44,7 @@ type NameMap = Map.Map String AST.Operand
 initNameMap :: NameMap
 initNameMap = Map.empty
 
-emit :: (LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
+emit :: (LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
 emit (Syn.Number i) = pure(int32 i)
 emit (Syn.Decimal f) = pure(double f)
 emit (Syn.Variable varname) =
@@ -52,7 +52,7 @@ emit (Syn.Variable varname) =
         varMap <- get
         let varOp = varMap Map.! varname
         load varOp
-emit var@(Syn.DefVar varname vartype) = 
+emit var@(Syn.DefVar varname vartype) =
     do
         newVar <- allocateDef var
         varMap <- get
@@ -69,7 +69,7 @@ emit (Syn.BinOp op a b) =
     do
         opA <- emit a
         opB <- emit b
-        let aType = typeOf opA
+        let aType = getElemType ( typeOf opA)
         findOperation aType op opA opB
 emit (Syn.Call fname fargs) =
     do
@@ -81,21 +81,35 @@ emit (Syn.Call fname fargs) =
             args <- emitArgs es
             return ((arg, []) : args)
         emitArgs _ = return []
+emit (Syn.MemOp (Syn.Store stype sptr svalue)) =
+    do
+        ptr <- emit sptr
+        value <- emit svalue
+        store ptr value
+        return value 
+emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
+    do
+        ptr <- emit sptr
+        value <- emit svalue
+        sextValue <- sext value i64
+        temp <- allocate (toLLVMType stype)
+        newAddr <- gep ptr ([sextValue])
+        load newAddr
 emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
-buildCodeBlock :: (MonadIRBuilder m, MonadState NameMap m) => [Syn.Expr] -> m AST.Operand
+buildCodeBlock :: (MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => [Syn.Expr] -> m AST.Operand
 buildCodeBlock exprBlock = do
   -- Steps of codegen
   ops <- mapM emit exprBlock
   return (last ops)
 
 -- funcBodyBuilder :: (MonadFix m, MonadIRBuilder m) => [Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
-funcBodyBuilder :: (MonadIRBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
+funcBodyBuilder :: (MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
 funcBodyBuilder bodyTokens args = funcBody
     where funcBody argsOperands = do
             named block bodyLabel
             allocArgs args
-            result <- buildCodeBlock bodyTokens 
+            result <- buildCodeBlock bodyTokens
             retVoid
 
 allocArgs :: (MonadIRBuilder m, MonadState NameMap m) => [Syn.Expr] -> m ()
@@ -116,7 +130,7 @@ buildFunction func@(Syn.Function name argsNames body) =
   function(AST.Name fname) fargs VoidType funcBody
   where
     fname = toShort' name
-    fargs = map argDef argsNames    
+    fargs = map argDef argsNames
     funcBody = funcBodyBuilder body argsNames
 
 

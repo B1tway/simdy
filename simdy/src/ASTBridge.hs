@@ -22,6 +22,11 @@ import LLVM.AST.Operand (DIGlobalVariable(type'))
 import qualified Data.Kind as LLVM.AST
 
 
+getElemType::LLVM.AST.Type.Type -> LLVM.AST.Type.Type
+getElemType (LLVM.AST.Type.IntegerType t) = i32
+getElemType (LLVM.AST.Type.FloatingPointType  t) = float
+getElemType (LLVM.AST.Type.VectorType elementType t) = getElemType t
+getElemType t = t
 
 typeMap :: Map.Map PrimitiveType LLVM.AST.Type.Type
 typeMap =
