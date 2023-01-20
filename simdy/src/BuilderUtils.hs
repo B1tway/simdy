@@ -20,6 +20,7 @@ import StringUtils
 import qualified Syntax as Syn
 import ASTBridge (toLLVMType)
 import Syntax (Expr)
+import LLVM.IRBuilder.Module (ParameterName(ParameterName))
 
 addrSpace :: AddrSpace
 addrSpace = AddrSpace 0
@@ -32,6 +33,9 @@ alignment = 4
 
 referenceLocal :: Syn.Type -> String -> Operand
 referenceLocal varType = reference (toLLVMType varType)
+
+argDef :: Expr -> (Type, ParameterName)
+argDef (Syn.DefVar defName defType) = (toLLVMType defType, ParameterName $ toShort' (argName defName))
 
 allocateDef :: MonadIRBuilder m => Syn.Expr -> m Operand
 allocateDef (Syn.DefVar varname vartype) = named (allocateT vartype) (toShort' varname)

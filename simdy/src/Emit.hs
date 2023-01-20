@@ -5,6 +5,8 @@
 module Emit where
 import LLVM.Module
 import LLVM.Context
+import LLVM.Pretty (ppllvm)
+import qualified Data.Text.Lazy.IO as TLIO
 
 import qualified LLVM.AST as AST
 import qualified LLVM.AST.Constant as C
@@ -30,8 +32,8 @@ import LLVM.AST (Type(VoidType))
 import ASTBridge
 
 import StringUtils
-import LLVM.AST.Typed (getElementType, Typed (typeOf))
-import LLVM.AST.Type (i32, float)
+import LLVM.AST.Typed (getElementType, Typed (typeOf), getElementPtrType)
+import LLVM.AST.Type (i32, float, void)
 import BuilderUtils
 import LLVM.IRBuilder (int32, double)
 import Syntax (PrimitiveType(I32))
@@ -50,17 +52,24 @@ emit (Syn.Variable varname) =
         varMap <- get
         let varOp = varMap Map.! varname
         load varOp
-emit var@(Syn.DefVar varname vartype) = allocateDef var
-emit (Syn.BinOp Syn.Assign (Syn.Variable varname) b) =
+emit var@(Syn.DefVar varname vartype) = 
     do
+        newVar <- allocateDef var
+        varMap <- get
+        let newVarMap = Map.insert varname newVar varMap
+        put newVarMap
+        return newVar
+emit (Syn.BinOp Syn.Assign a b) =
+    do
+        varOperand <- emit a
         value <- emit b
-        store (referenceVar (Syn.Primitive  Syn.I32) varname) value
+        store varOperand value
         return value
 emit (Syn.BinOp op a b) =
     do
         opA <- emit a
         opB <- emit b
-        let aType = getElementType (typeOf opA)
+        let aType = typeOf opA
         findOperation aType op opA opB
 emit (Syn.Call fname fargs) =
     do
@@ -72,26 +81,54 @@ emit (Syn.Call fname fargs) =
             args <- emitArgs es
             return ((arg, []) : args)
         emitArgs _ = return []
+emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
+buildCodeBlock :: (MonadIRBuilder m, MonadState NameMap m) => [Syn.Expr] -> m AST.Operand
+buildCodeBlock exprBlock = do
+  -- Steps of codegen
+  ops <- mapM emit exprBlock
+  return (last ops)
 
-allocArgs :: MonadIRBuilder m => [Syn.Expr] -> m ()
+-- funcBodyBuilder :: (MonadFix m, MonadIRBuilder m) => [Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
+funcBodyBuilder :: (MonadIRBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
+funcBodyBuilder bodyTokens args = funcBody
+    where funcBody argsOperands = do
+            named block bodyLabel
+            allocArgs args
+            result <- buildCodeBlock bodyTokens 
+            retVoid
+
+allocArgs :: (MonadIRBuilder m, MonadState NameMap m) => [Syn.Expr] -> m ()
 allocArgs (e@(Syn.DefVar varname vartype) : exprs) = do
   p <- allocateT vartype `named` toShort' varname
   store p (referenceLocal vartype $ argName varname)
+  varMap <- get
+  let newVarMap = Map.insert varname p varMap
+  put newVarMap
   allocArgs exprs
 allocArgs [] = pure ()
 
 
--- buildFunction :: (MonadModuleBuilder m, MonadFix m) => Syn.Expr -> m AST.Operand
--- buildFunction (Syn.Function fname fargs fbody) =
---     where
---         args = map argDef 
+-- buildFunction :: MonadModuleBuilder m => Syn.Expr -> m AST.Operand
+buildFunction :: (MonadModuleBuilder m,
+ MonadState (Map.Map String AST.Operand) m) => Syn.Expr -> m AST.Operand
+buildFunction func@(Syn.Function name argsNames body) =
+  function(AST.Name fname) fargs VoidType funcBody
+  where
+    fname = toShort' name
+    fargs = map argDef argsNames    
+    funcBody = funcBodyBuilder body argsNames
+
 
 -- parseTopLevel :: (MonadModuleBuilder m, MonadFix m) => [Syn.Expr] -> m ()
--- parseTopLevel (e:es) = do
---   buildFunction e >> pure ()
---   parseTopLevel es
--- parseTopLevel [] = pure ()
+parseTopLevel :: (MonadModuleBuilder m, MonadState (Map.Map String AST.Operand) m) => [Syn.Expr] -> m ()
+parseTopLevel (e:es) = do
+  buildFunction e >> pure ()
+  parseTopLevel es
+parseTopLevel [] = pure ()
 
--- buildIR :: [Syn.Expr] -> AST.Module
--- buildIR exprs = buildModule "program" $ parseTopLevel exprs
+buildIR :: [Syn.Expr] -> AST.Module
+buildIR exprs = evalState (buildModuleT "program" $ parseTopLevel exprs) initNameMap
+
+printIR :: AST.Module -> IO ()
+printIR ir = TLIO.putStrLn $ ppllvm ir
