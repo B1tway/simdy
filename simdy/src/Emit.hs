@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE RecursiveDo #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-
 
 module Emit where
 import LLVM.Module
@@ -18,6 +17,10 @@ import Data.Word
 import Data.Int
 import Control.Monad.Except
 import Control.Applicative
+import Control.Monad
+import Control.Monad.Fix
+import Control.Monad.Reader
+import Control.Monad.State
 import qualified Data.Map as Map
 
 import Codegen
@@ -32,12 +35,21 @@ import LLVM.AST.Type (i32, float)
 import BuilderUtils
 import LLVM.IRBuilder (int32, double)
 import Syntax (PrimitiveType(I32))
+import LLVM.IRBuilder.Module
+import LLVM.IRBuilder.Monad
 
+type NameMap = Map.Map String AST.Operand
+initNameMap :: NameMap
+initNameMap = Map.empty
 
-emit :: LLVM.IRBuilder.Monad.MonadIRBuilder m => Syn.Expr -> m AST.Operand
+emit :: (LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
 emit (Syn.Number i) = pure(int32 i)
 emit (Syn.Decimal f) = pure(double f)
-emit (Syn.Variable varname) = load (referenceVar (Syn.Primitive  Syn.I32) varname) 
+emit (Syn.Variable varname) =
+    do
+        varMap <- get
+        let varOp = varMap Map.! varname
+        load varOp
 emit var@(Syn.DefVar varname vartype) = allocateDef var
 emit (Syn.BinOp Syn.Assign (Syn.Variable varname) b) =
     do
@@ -50,7 +62,7 @@ emit (Syn.BinOp op a b) =
         opB <- emit b
         let aType = getElementType (typeOf opA)
         findOperation aType op opA opB
-emit (Syn.Call fname fargs) = 
+emit (Syn.Call fname fargs) =
     do
         args <- emitArgs fargs
         call (makeFuncRef fname) args
@@ -59,13 +71,27 @@ emit (Syn.Call fname fargs) =
             arg <- emit e
             args <- emitArgs es
             return ((arg, []) : args)
-        emitArgs _ = return []  
+        emitArgs _ = return []
 
 
+allocArgs :: MonadIRBuilder m => [Syn.Expr] -> m ()
+allocArgs (e@(Syn.DefVar varname vartype) : exprs) = do
+  p <- allocateT vartype `named` toShort' varname
+  store p (referenceLocal vartype $ argName varname)
+  allocArgs exprs
+allocArgs [] = pure ()
 
--- buildFunction :: (MonadModuleBuilder m, MonadFix m) => Expr -> m Operand
--- buildFunction (Syn.Function fname fargs fbody) func@(TFunction name argsNames body) =
---   function (Name $ toShort' name) arguments (toLLVMType retType) funcBody
---   where typedArgs =  [TypedExpr (argsTypes !! i) (TDef (argsNames !! i)) | i <- [0..(length argsNames - 1)]]
---         arguments = map argDef typedArgs
---         funcBody = funcBodyBuilder body typedArgs
+
+-- buildFunction :: (MonadModuleBuilder m, MonadFix m) => Syn.Expr -> m AST.Operand
+-- buildFunction (Syn.Function fname fargs fbody) =
+--     where
+--         args = map argDef 
+
+-- parseTopLevel :: (MonadModuleBuilder m, MonadFix m) => [Syn.Expr] -> m ()
+-- parseTopLevel (e:es) = do
+--   buildFunction e >> pure ()
+--   parseTopLevel es
+-- parseTopLevel [] = pure ()
+
+-- buildIR :: [Syn.Expr] -> AST.Module
+-- buildIR exprs = buildModule "program" $ parseTopLevel exprs

@@ -30,7 +30,8 @@ iSize = 32
 alignment :: Word32
 alignment = 4
 
-
+referenceLocal :: Syn.Type -> String -> Operand
+referenceLocal varType = reference (toLLVMType varType)
 
 allocateDef :: MonadIRBuilder m => Syn.Expr -> m Operand
 allocateDef (Syn.DefVar varname vartype) = named (allocateT vartype) (toShort' varname)
