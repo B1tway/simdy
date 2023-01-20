@@ -1,0 +1,4 @@
+AST: 
+Function "g" [] [If (BinOp Greater (Int 1) (Int 2)) [] []]
+Function "f" [] []
+Function "foo" [DefVar "var1" (Primitive U32),DefVar "var2" (Primitive U32)] [If (BinOp Greater (Variable "var1") (Variable "var2")) [Call "g" []] [Call "f" []]]
