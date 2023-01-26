@@ -196,8 +196,5 @@ contents p = do
 toplevel :: Parser [Expr]
 toplevel = many $ do defn
 
-parseExpr :: String -> Either ParseError Expr
-parseExpr = parse (contents expr) "<stdin>"
-
 parseToplevel :: String -> Either ParseError [Expr]
 parseToplevel = parse (contents toplevel) "<stdin>"
