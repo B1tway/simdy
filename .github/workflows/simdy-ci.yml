@@ -1,0 +1,37 @@
+name: symdy-ci
+on: [push]
+
+defaults:
+  run:
+    working-directory: simdy
+
+jobs:
+  build_job:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build solution
+        run: stack build
+
+  lint-tools:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: 'Set up HLint'
+      uses: rwe/actions-hlint-setup@v1
+      with:
+        version: '3.1.6'
+
+    - name: 'Run HLint'
+      uses: rwe/actions-hlint-run@v2
+      with:
+        path: ./
+        fail-on: warning
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Test task
+        run: echo "TODO"

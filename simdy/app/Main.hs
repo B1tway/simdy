@@ -1,16 +1,13 @@
 module Main (main) where
 
 import Parser (parseToplevel)
-import qualified Data.Text.Lazy.IO as TLIO
-
 import LLVM.Module 
 
-import System.IO
 import System.Environment()
 import Control.Monad()
-import GHC.Exts (build)
 import Emit (buildIR, printIR)
 import Compiler (writeObject)
+
 
 process :: String -> IO ()
 process line = do
@@ -24,7 +21,7 @@ process line = do
       where ir = buildIR ex
     -- Right ex -> mapM_ print ex
 
-
+main:: IO()
 main =  do
     minput <- getContents
     putStrLn "AST: "
