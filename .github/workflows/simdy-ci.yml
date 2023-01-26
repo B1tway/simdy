@@ -33,5 +33,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Test task
-        run: echo "TODO"
+      - name: test
+        run: stack test
