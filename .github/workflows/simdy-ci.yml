@@ -15,7 +15,7 @@ jobs:
         run: stack build
 
   lint-tools:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: 'Set up HLint'
@@ -30,7 +30,7 @@ jobs:
         fail-on: warning
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - name: test
