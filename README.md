@@ -180,8 +180,53 @@ factor =
 
 ```
 ## Ввод/вывод программы
+### Simdy input
+```c
+func foo(a:vec<8, i32>, b:vec<8, i32>, c : ptr<i32>) {
+    sum : vec<8, i32> = a + b
+    store<i32>(c, sum)
+}
 
+```
+### LLVM-IR
+```llvm
+define external ccc  void @foo(<8 x i32>  %arg_a_0, <8 x i32>  %arg_b_0, i32*  %arg_c_0)    {
+Body_0:
+  %a_0 = alloca <8 x i32>, align 4 
+  store  <8 x i32> %arg_a_0, <8 x i32>* %a_0, align 4 
+  %b_0 = alloca <8 x i32>, align 4 
+  store  <8 x i32> %arg_b_0, <8 x i32>* %b_0, align 4 
+  %c_0 = alloca i32*, align 4 
+  store  i32* %arg_c_0, i32** %c_0, align 4 
+  %sum_0 = alloca <8 x i32>, align 4 
+  %0 = load  <8 x i32>, <8 x i32>* %a_0, align 4 
+  %1 = load  <8 x i32>, <8 x i32>* %b_0, align 4 
+  %2 = add   <8 x i32> %0, %1 
+  store  <8 x i32> %2, <8 x i32>* %sum_0, align 4 
+  %3 = load  i32*, i32** %c_0, align 4 
+  %4 = load  <8 x i32>, <8 x i32>* %sum_0, align 4 
+  store  <8 x i32> %4, i32* %3, align 4 
+  ret void 
+}
 
+```
+### x86-64
+```nasm
+foo:                                    # @foo
+        movdqa  xmmword ptr [rsp - 24], xmm1
+        movdqa  xmmword ptr [rsp - 40], xmm0
+        movdqa  xmmword ptr [rsp - 56], xmm3
+        movdqa  xmmword ptr [rsp - 72], xmm2
+        mov     qword ptr [rsp - 112], rdi
+        paddd   xmm0, xmm2
+        paddd   xmm1, xmm3
+        movdqa  xmmword ptr [rsp - 88], xmm1
+        movdqa  xmmword ptr [rsp - 104], xmm0
+        movdqu  xmmword ptr [rdi + 16], xmm1
+        movdqu  xmmword ptr [rdi], xmm0
+        ret
+}
+```
 ## Выводы
 
 В ходе этой работы мы поработали с Parsec, изучили как можно относительно легко и быстро писать парсеры с помощью языка Haskell, используя парсер-комбинаторы. Также... 

@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
 
 module Emit where
@@ -48,18 +48,18 @@ initNameMap = Map.empty
 emit :: (MonadFix m, LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
 emit (Syn.Number i) = pure(int32 i)
 emit (Syn.Decimal f) = pure(double f)
-emit (Syn.If cond (blockTrue) (blockFalse)) =
+emit (Syn.If cond blockTrue blockFalse) =
     mdo
       condition <- emit cond
-      resultPointer <- allocate (typeOf condition) 
+      resultPointer <- allocate (typeOf condition)
       condBr condition trueBranch falseBranch
       trueBranch <- buildBranch "true" blockTrue resultPointer $ Just mainBr
       falseBranch <- buildBranch "false" blockFalse resultPointer $ Just mainBr
       mainBr <- emitExit resultPointer
       return condition
-emit (Syn.While cond bodyBlock) = 
+emit (Syn.While cond bodyBlock) =
   mdo
-    resultPointer <- allocate (typeOf condition) 
+    resultPointer <- allocate (typeOf condition)
     br whileStart  -- we need terminator instruction at the end of the previous block, it will be optimized away
     whileStart <- block `named` "whileStart"
     condition <- emit cond
@@ -116,7 +116,7 @@ emit (Syn.MemOp (Syn.Store stype sptr svalue)) =
         ptr <- emit sptr
         value <- emit svalue
         store ptr value
-        return value 
+        return value
 emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
     do
         ptr <- emit sptr
@@ -127,9 +127,7 @@ emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
         load newAddr
 emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
-emitExit resultPointer = do
-  mainBr <- block `named` bodyLabel
-  return mainBr
+emitExit resultPointer = block `named` bodyLabel
 
 buildBranch name codeBlock resultPointer mNext =
   do

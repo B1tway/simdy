@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Compiler where
 
 import qualified LLVM.AST
@@ -14,4 +12,4 @@ writeWithModuleFromAST :: File -> Context -> LLVM.AST.Module -> IO ()
 writeWithModuleFromAST f c m = withModuleFromAST c m (writeWithDefaultTarget f)
 
 writeObject :: File -> LLVM.AST.Module -> IO ()
-writeObject file mod = withContext (\c -> writeWithModuleFromAST file c mod)
+writeObject file module' = withContext (\c -> writeWithModuleFromAST file c module')
