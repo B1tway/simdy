@@ -1,2 +1,0 @@
-AST: 
-Function "foo" [DefVar "array" (VectType (Int 2) U32)] [BinOp Assign (DefVar "addr" (Ptr (Primitive U32))) (Int 2),MemOp (Store (Primitive U32) (Variable "addr") (Int 0))]
