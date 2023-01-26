@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -25,9 +25,15 @@ source-repository head
 
 library
   exposed-modules:
+      ASTBridge
+      BuilderUtils
+      Codegen
+      Compiler
+      Emit
       Lexer
       Lib
       Parser
+      StringUtils
       Syntax
   other-modules:
       Paths_simdy
@@ -36,9 +42,16 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , containers
     , haskeline
+    , llvm-hs
+    , llvm-hs-pretty
+    , llvm-hs-pure
     , mtl
     , parsec
+    , text
+    , utf8-string
   default-language: Haskell2010
 
 executable simdy-exe
@@ -50,10 +63,17 @@ executable simdy-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , containers
     , haskeline
+    , llvm-hs
+    , llvm-hs-pretty
+    , llvm-hs-pure
     , mtl
     , parsec
     , simdy
+    , text
+    , utf8-string
   default-language: Haskell2010
 
 test-suite simdy-test
@@ -66,8 +86,15 @@ test-suite simdy-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , containers
     , haskeline
+    , llvm-hs
+    , llvm-hs-pretty
+    , llvm-hs-pure
     , mtl
     , parsec
     , simdy
+    , text
+    , utf8-string
   default-language: Haskell2010

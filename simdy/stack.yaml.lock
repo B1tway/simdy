@@ -3,11 +3,31 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: llvm-hs-9.0.1@sha256:ee6ec2eb8cba4daf2a43586388a87dbfd6a2ec6d81d1f9965896ac187acad286,8700
+    pantry-tree:
+      sha256: 537616dec1351bd9f7905182f82f132359cf3058ebbb059c03b4edcef04b2689
+      size: 13599
+  original:
+    hackage: llvm-hs-9.0.1
+- completed:
+    hackage: llvm-hs-pure-9.0.0@sha256:134779f40086a366279f678e670b610d7a7618b28dd43f65894078fd20e04629,2945
+    pantry-tree:
+      sha256: f1a83aa959b69b72342997fc4fdc352086bc3b9f306cfb6a4c8bbc850d36b4fb
+      size: 2600
+  original:
+    hackage: llvm-hs-pure-9.0.0
+- completed:
+    hackage: llvm-hs-pretty-0.9.0.0@sha256:b7a5de5f3dd97893d19d2b47af1e4dd8d075a5cf57062180a912d1f3ef1def60,1671
+    pantry-tree:
+      sha256: 8cf6d628bb4f962575ad0993bb1010e9989cea00b325b8a45ac35ac201061386
+      size: 4685
+  original:
+    hackage: llvm-hs-pretty-0.9.0.0
 snapshots:
 - completed:
-    size: 649315
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/6.yaml
-    sha256: 4905c93319aa94aa53da8f41d614d7bacdbfe6c63a8c6132d32e6e62f24a9af4
-  original:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/6.yaml
+    sha256: 283773e7120f5446d961eab35ea95c9af9c24187cc178537bd29273200a05171
+    size: 523443
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/0.yaml
+  original: lts-14.0
