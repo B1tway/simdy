@@ -1,6 +1,9 @@
 name: symdy-ci
 on: [push]
 
+defaults:
+  run:
+    working-directory: simdy
 
 jobs:
   build_job:
