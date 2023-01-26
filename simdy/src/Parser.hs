@@ -15,6 +15,7 @@ import Control.Exception (bracket)
 import Control.Applicative ()
 
 
+
 binary :: String -> Op -> Ex.Assoc -> Ex.Operator String () Data.Functor.Identity.Identity Expr
 binary s f  = Ex.Infix (reservedOp s >> return (BinOp f))
 
@@ -131,7 +132,7 @@ function = do
 call :: Parser Expr
 call = do
     name <- identifier
-    args <- parens $ commaSep variableDef
+    args <- parens $ commaSep variable
     return $ Call name args
 
 ifelse :: Parser Expr
