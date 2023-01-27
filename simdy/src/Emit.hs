@@ -107,7 +107,7 @@ emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
         value <- emit svalue
         sextValue <- sext value i64
         temp <- allocate (toLLVMType stype)
-        newAddr <- gep ptr ([sextValue])
+        newAddr <- gep ptr [sextValue]
         load newAddr
 emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
