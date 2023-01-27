@@ -20,7 +20,6 @@ import LLVM.IRBuilder (double, int32)
 import LLVM.IRBuilder.Instruction hiding (load, store)
 import LLVM.IRBuilder.Module
 import LLVM.IRBuilder.Monad
-import qualified LLVM.IRBuilder.Monad
 import LLVM.Pretty (ppllvm)
 
 import StringUtils
