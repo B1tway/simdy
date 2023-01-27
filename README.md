@@ -28,7 +28,7 @@ __Лабораторная работа №4__
 ## Ключевые элементы реализации с минимальными комментариями
 
 
-```
+```haskell
 
 -- AST для ЯП
 
@@ -65,7 +65,7 @@ data MemoryOp = Load Type Expr Expr | Store Type Expr Expr deriving (Eq, Ord, Sh
 
 ```
 
-```
+```haskell
 
 -- лексер, релизованный с помощью Parsec, модуль содержит все базовые парсеры, ключевые слова и операторы языка
 
@@ -139,7 +139,7 @@ reservedOp = Tok.reservedOp lexer
 
 ```
 
-```
+```haskell
 
 -- Парсер, который разбирает программу, поданную на вход и строит AST
 
@@ -178,6 +178,85 @@ factor =
     <|> parens expr
 
 
+```
+```haskell
+emit :: (MonadFix m, LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
+emit (Syn.Number i) = pure(int32 i)
+emit (Syn.Decimal f) = pure(double f)
+emit (Syn.If cond blockTrue blockFalse) =
+    mdo
+      condition <- emit cond
+      resultPointer <- allocate (typeOf condition)
+      condBr condition trueBranch falseBranch
+      trueBranch <- buildBranch "true" blockTrue resultPointer $ Just mainBr
+      falseBranch <- buildBranch "false" blockFalse resultPointer $ Just mainBr
+      mainBr <- emitExit resultPointer
+      return condition
+emit (Syn.While cond bodyBlock) =
+  mdo
+    resultPointer <- allocate (typeOf condition)
+    br whileStart  -- we need terminator instruction at the end of the previous block, it will be optimized away
+    whileStart <- block `named` "whileStart"
+    condition <- emit cond
+    condBr condition whileBody mainBr
+    whileBody <- buildBranch "whileBody" bodyBlock resultPointer $ Just whileStart  -- after executing jump to beginning
+    mainBr <- emitExit resultPointer
+    return condition
+emit (Syn.Variable varname) =
+    do
+        varMap <- get
+        let varOp = varMap Map.! varname
+        load varOp
+emit var@(Syn.DefVar varname vartype) =
+    do
+        newVar <- allocateDef var
+        varMap <- get
+        let newVarMap = Map.insert varname newVar varMap
+        put newVarMap
+        return newVar
+emit (Syn.BinOp Syn.Assign a@(Syn.DefVar varname vartype) b) =
+    do
+        varOperand <- emit a
+        getVar b varname
+emit (Syn.BinOp Syn.Assign a@(Syn.Variable varname) b) =
+    do
+        -- varOperand <- emit a
+        varMap <- get
+        let varAddress = varMap Map.! varname
+        value <- emit b
+        store varAddress value
+        return value
+emit (Syn.BinOp op a b) =
+    do
+        opA <- emit a
+        opB <- emit b
+        let aType = getElemType ( typeOf opA)
+        findOperation aType op opA opB
+emit (Syn.Call fname fargs) =
+    do
+        args <- emitArgs fargs
+        call (makeFuncRef fname) args
+    where
+        emitArgs (e:es) = do
+            arg <- emit e
+            args <- emitArgs es
+            return ((arg, []) : args)
+        emitArgs _ = return []
+emit (Syn.MemOp (Syn.Store stype sptr svalue)) =
+    do
+        ptr <- emit sptr
+        value <- emit svalue
+        store ptr value
+        return value
+emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
+    do
+        ptr <- emit sptr
+        value <- emit svalue
+        sextValue <- sext value i64
+        temp <- allocate (toLLVMType stype)
+        newAddr <- gep ptr [sextValue]
+        load newAddr
+emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 ```
 ## Ввод/вывод программы
 ### Simdy input
