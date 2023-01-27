@@ -180,6 +180,7 @@ factor =
 
 ```
 ```haskell
+-- AST -> LLVM IR convertation
 emit :: (MonadFix m, LLVM.IRBuilder.Monad.MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) => Syn.Expr -> m AST.Operand
 emit (Syn.Number i) = pure(int32 i)
 emit (Syn.Decimal f) = pure(double f)
