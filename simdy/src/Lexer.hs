@@ -1,7 +1,18 @@
-module Lexer
-       (lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces,
-        decimal', angles, brackets)
-       where
+module Lexer (
+    lexer,
+    parens,
+    identifier,
+    reserved,
+    reservedOp,
+    int',
+    commaSep,
+    braces,
+    decimal',
+    angles,
+    brackets,
+)
+where
+
 import Syntax ()
 import Text.Parsec.Language (emptyDef)
 
@@ -11,18 +22,59 @@ import qualified Text.Parsec.Token as Tok
 
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style
-  where ops
-          = ["+", "++", "*", "-", "--", "/", "%", "~", "||", "&&", "<", ">",
-             "==", "!=", "=", ":", "(", ")", "{", "}", "[", "]", ","]
+    where
+        ops =
+            [ "+"
+            , "++"
+            , "*"
+            , "-"
+            , "--"
+            , "/"
+            , "%"
+            , "~"
+            , "||"
+            , "&&"
+            , "<"
+            , ">"
+            , "=="
+            , "!="
+            , "="
+            , ":"
+            , "("
+            , ")"
+            , "{"
+            , "}"
+            , "["
+            , "]"
+            , ","
+            ]
 
-        names
-          = ["func", "load", "store", "sizeof", "bitcast", "i32", "u32", "i16",
-             "u16", "float", "double", "if", "else", "for", "while", "ptr",
-             "vec"]
+        names =
+            [ "func"
+            , "load"
+            , "store"
+            , "sizeof"
+            , "bitcast"
+            , "i32"
+            , "u32"
+            , "i16"
+            , "u16"
+            , "float"
+            , "double"
+            , "if"
+            , "else"
+            , "for"
+            , "while"
+            , "ptr"
+            , "vec"
+            ]
 
-        style
-          = emptyDef{Tok.commentLine = "//", Tok.reservedOpNames = ops,
-                     Tok.reservedNames = names}
+        style =
+            emptyDef
+                { Tok.commentLine = "//"
+                , Tok.reservedOpNames = ops
+                , Tok.reservedNames = names
+                }
 
 int' :: Parser Integer
 int' = Tok.integer lexer

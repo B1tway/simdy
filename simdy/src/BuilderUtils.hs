@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 {-# OPTIONS -fno-warn-incomplete-patterns#-}
 {-# OPTIONS -fno-warn-missing-export-lists#-}
 
 module BuilderUtils where
+
 import ASTBridge (toLLVMType)
 import Data.ByteString.Short (ShortByteString)
 
@@ -16,7 +18,7 @@ import LLVM.AST.Type as AST
 import LLVM.IRBuilder.Constant hiding (double)
 import LLVM.IRBuilder.Instruction hiding (load, store)
 import qualified LLVM.IRBuilder.Instruction as I
-import LLVM.IRBuilder.Module (ParameterName(ParameterName))
+import LLVM.IRBuilder.Module (ParameterName (ParameterName))
 
 import LLVM.IRBuilder.Monad
 import StringUtils (toShort')
@@ -36,19 +38,19 @@ referenceLocal :: Syn.Type -> String -> Operand
 referenceLocal varType = reference (toLLVMType varType)
 
 argDef :: Expr -> (Type, ParameterName)
-argDef (Syn.DefVar defName defType)
-  = (toLLVMType defType, ParameterName $ toShort' (argName defName))
+argDef (Syn.DefVar defName defType) =
+    (toLLVMType defType, ParameterName $ toShort' (argName defName))
 
 allocateDef :: MonadIRBuilder m => Syn.Expr -> m Operand
-allocateDef (Syn.DefVar varname vartype)
-  = named (allocateT vartype) (toShort' varname)
+allocateDef (Syn.DefVar varname vartype) =
+    named (allocateT vartype) (toShort' varname)
 
 allocateT :: MonadIRBuilder m => Syn.Type -> m Operand
 allocateT t = allocate (toLLVMType t)
 
 integerConstant :: Integer -> Operand
-integerConstant i
-  = ConstantOperand (C.Int{C.integerBits = iSize, C.integerValue = i})
+integerConstant i =
+    ConstantOperand (C.Int{C.integerBits = iSize, C.integerValue = i})
 
 integerPointer :: AST.Type
 integerPointer = AST.PointerType i32 addrSpace
@@ -66,10 +68,11 @@ store :: MonadIRBuilder m => Operand -> Operand -> m ()
 store pointer = I.store pointer alignment
 
 saveInt :: MonadIRBuilder m => Integer -> m Operand
-saveInt ivalue
-  = do pointer <- allocateInt
-       store pointer (int32 ivalue)
-       return pointer
+saveInt ivalue =
+    do
+        pointer <- allocateInt
+        store pointer (int32 ivalue)
+        return pointer
 
 refName :: String -> A.Name
 refName name = Name (toShort' $ name ++ "_0")
@@ -93,9 +96,10 @@ referenceIntPointer :: String -> Operand
 referenceIntPointer = reference integerPointer
 
 makeFuncRef :: String -> Operand
-makeFuncRef funcName
-  = ConstantOperand (C.GlobalReference funcType $ globalName funcName)
-  where funcType = FunctionType void [] False
+makeFuncRef funcName =
+    ConstantOperand (C.GlobalReference funcType $ globalName funcName)
+    where
+        funcType = FunctionType void [] False
 
 bodyLabel :: ShortByteString
 bodyLabel = toShort' "Body"
