@@ -1,0 +1,14 @@
+// RUN: simdy-exe < %s | FileCheck %s
+
+// CHECK: foo
+func foo(a:vec<8, i32>, b:vec<8, i32>, c : ptr<i32>) {
+    // CHECK: alloca <8 x i32>
+    // CHECK: alloca <8 x i32>
+    // CHECK: alloca <8 x i32>
+    // CHECK: load <8 x i32>
+    // CHECK: load <8 x i32>
+    // CHECK: add <8 x i32>
+    sum : vec<8, i32> = a + b
+    // CHECK: store <8 x i32>
+    store<i32>(c, sum)
+}
