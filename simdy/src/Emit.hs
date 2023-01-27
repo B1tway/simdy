@@ -70,11 +70,7 @@ emit var@(Syn.DefVar varname vartype) =
 emit (Syn.BinOp Syn.Assign a@(Syn.DefVar varname vartype) b) =
     do
         varOperand <- emit a
-        varMap <- get
-        let varAddress = varMap Map.! varname
-        value <- emit b
-        store varAddress value
-        return value
+        getVar b varname
 emit (Syn.BinOp Syn.Assign a@(Syn.Variable varname) b) =
     do
         -- varOperand <- emit a
@@ -180,3 +176,14 @@ buildIR exprs = evalState (buildModuleT "program" $ parseTopLevel exprs) initNam
 
 printIR :: AST.Module -> IO ()
 printIR ir = TLIO.putStrLn $ ppllvm ir
+
+
+
+getVar :: (MonadState NameMap m, MonadModuleBuilder m, MonadIRBuilder m,
+ MonadFix m) => Syn.Expr -> String -> m AST.Operand
+getVar varnode varname = do
+      varMap <- get
+      let varAddress = varMap Map.! varname
+      value <- emit varnode
+      store varAddress value
+      return value
