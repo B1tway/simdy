@@ -3,25 +3,25 @@
 {-# OPTIONS -fno-warn-missing-export-lists#-}
 
 module BuilderUtils where
+import ASTBridge (toLLVMType)
+import Data.ByteString.Short (ShortByteString)
 
 import Data.Word (Word32)
 
-import LLVM.AST hiding (function, alignment, Call)
-import LLVM.AST.AddrSpace
-import LLVM.AST.Type as AST
+import LLVM.AST hiding (Call, alignment, function)
 import qualified LLVM.AST as A
+import LLVM.AST.AddrSpace
 import qualified LLVM.AST.Constant as C
+import LLVM.AST.Type as AST
+import LLVM.IRBuilder.Constant hiding (double)
+import LLVM.IRBuilder.Instruction hiding (load, store)
+import qualified LLVM.IRBuilder.Instruction as I
+import LLVM.IRBuilder.Module (ParameterName(ParameterName))
 
 import LLVM.IRBuilder.Monad
-import LLVM.IRBuilder.Instruction hiding (load, store)
-import LLVM.IRBuilder.Constant hiding (double)
-import qualified LLVM.IRBuilder.Instruction as I
-import Data.ByteString.Short (ShortByteString)
-import StringUtils ( toShort' )
-import qualified Syntax as Syn
-import ASTBridge (toLLVMType)
+import StringUtils (toShort')
 import Syntax (Expr)
-import LLVM.IRBuilder.Module (ParameterName(ParameterName))
+import qualified Syntax as Syn
 
 addrSpace :: AddrSpace
 addrSpace = AddrSpace 0
@@ -36,16 +36,19 @@ referenceLocal :: Syn.Type -> String -> Operand
 referenceLocal varType = reference (toLLVMType varType)
 
 argDef :: Expr -> (Type, ParameterName)
-argDef (Syn.DefVar defName defType) = (toLLVMType defType, ParameterName $ toShort' (argName defName))
+argDef (Syn.DefVar defName defType)
+  = (toLLVMType defType, ParameterName $ toShort' (argName defName))
 
 allocateDef :: MonadIRBuilder m => Syn.Expr -> m Operand
-allocateDef (Syn.DefVar varname vartype) = named (allocateT vartype) (toShort' varname)
+allocateDef (Syn.DefVar varname vartype)
+  = named (allocateT vartype) (toShort' varname)
 
 allocateT :: MonadIRBuilder m => Syn.Type -> m Operand
 allocateT t = allocate (toLLVMType t)
 
 integerConstant :: Integer -> Operand
-integerConstant i = ConstantOperand (C.Int {C.integerBits = iSize, C.integerValue = i})
+integerConstant i
+  = ConstantOperand (C.Int{C.integerBits = iSize, C.integerValue = i})
 
 integerPointer :: AST.Type
 integerPointer = AST.PointerType i32 addrSpace
@@ -61,12 +64,12 @@ load pointer = I.load pointer alignment
 
 store :: MonadIRBuilder m => Operand -> Operand -> m ()
 store pointer = I.store pointer alignment
-  
+
 saveInt :: MonadIRBuilder m => Integer -> m Operand
-saveInt ivalue = do
-  pointer <- allocateInt
-  store pointer (int32 ivalue)
-  return pointer
+saveInt ivalue
+  = do pointer <- allocateInt
+       store pointer (int32 ivalue)
+       return pointer
 
 refName :: String -> A.Name
 refName name = Name (toShort' $ name ++ "_0")
@@ -90,7 +93,8 @@ referenceIntPointer :: String -> Operand
 referenceIntPointer = reference integerPointer
 
 makeFuncRef :: String -> Operand
-makeFuncRef funcName = ConstantOperand (C.GlobalReference funcType $ globalName funcName)
+makeFuncRef funcName
+  = ConstantOperand (C.GlobalReference funcType $ globalName funcName)
   where funcType = FunctionType void [] False
 
 bodyLabel :: ShortByteString
