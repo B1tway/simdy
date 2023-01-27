@@ -1,6 +1,6 @@
 module Main (main)  where
 import Parser (parseToplevel)
-import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..),Name, UnaryOp(..), MemoryOp(..) )
+import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..), UnaryOp(..), MemoryOp(..) )
 import Test.Tasty
 import Test.Tasty.HUnit as H
 
