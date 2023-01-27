@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS -fno-warn-incomplete-patterns#-}
+{-# OPTIONS -fno-warn-missing-export-lists#-}
 
 module BuilderUtils where
 
@@ -8,15 +10,14 @@ import LLVM.AST hiding (function, alignment, Call)
 import LLVM.AST.AddrSpace
 import LLVM.AST.Type as AST
 import qualified LLVM.AST as A
-import qualified LLVM.AST.Float as F
 import qualified LLVM.AST.Constant as C
 
 import LLVM.IRBuilder.Monad
 import LLVM.IRBuilder.Instruction hiding (load, store)
 import LLVM.IRBuilder.Constant hiding (double)
 import qualified LLVM.IRBuilder.Instruction as I
-
-import StringUtils
+import Data.ByteString.Short (ShortByteString)
+import StringUtils ( toShort' )
 import qualified Syntax as Syn
 import ASTBridge (toLLVMType)
 import Syntax (Expr)
@@ -62,9 +63,9 @@ store :: MonadIRBuilder m => Operand -> Operand -> m ()
 store pointer = I.store pointer alignment
   
 saveInt :: MonadIRBuilder m => Integer -> m Operand
-saveInt value = do
+saveInt ivalue = do
   pointer <- allocateInt
-  store pointer (int32 value)
+  store pointer (int32 ivalue)
   return pointer
 
 refName :: String -> A.Name
@@ -92,10 +93,13 @@ makeFuncRef :: String -> Operand
 makeFuncRef funcName = ConstantOperand (C.GlobalReference funcType $ globalName funcName)
   where funcType = FunctionType void [] False
 
+bodyLabel :: ShortByteString
 bodyLabel = toShort' "Body"
 
+argName :: String -> String
 argName = ("arg_" ++)
 
+intToFloat :: MonadIRBuilder m => Operand -> m Operand
 intToFloat op = sitofp op double
 
 floatToInt :: MonadIRBuilder m => Operand -> m Operand
