@@ -1,0 +1,9 @@
+// RUN: simdy-exe < %s | FileCheck %s
+
+// CHECK: foo
+func foo(a : ptr<i32>, b : ptr<i32>) {
+    // CHECK: load <8 x i32>
+    sum : vec<8, i32>  = load<i32>(a, 0)
+    // CHECK: store <8 x i32>
+    store<i32>(b, sum)
+}
