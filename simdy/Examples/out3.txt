@@ -1,2 +1,0 @@
-AST: 
-Function "foo" [DefVar "x" (Primitive I32),DefVar "arrPtr" (Ptr (Primitive U32)),DefVar "size" (Primitive U16)] [BinOp Assign (DefVar "i" (Primitive U16)) (Int 0),While (BinOp Less (Variable "i") (Variable "size")) [BinOp Assign (IndexOp (Variable "arrPtr") (Variable "i")) (CastOp (Primitive U32) (Variable "x")),UnOp Increment (Variable "i")]]

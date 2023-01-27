@@ -1,18 +1,16 @@
---{-# LANGUAGE BlockArguments #-}
 module Parser (parseToplevel) where
 
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import Text.Parsec.Token (GenLanguageDef(identLetter))
 import qualified Text.Parsec.Expr as Ex
 import qualified Text.Parsec.Token as Tok
 import qualified Data.Functor.Identity
 
 import Lexer ( lexer, parens, identifier, reserved, reservedOp, int', commaSep, braces, decimal', angles, brackets )
-import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..),Name, UnaryOp(..), MemoryOp(..) )
+import Syntax ( Op(..), Expr(..), Type(..), PrimitiveType(..), UnaryOp(..), MemoryOp(..) )
 import Data.Maybe (fromMaybe)
-import Control.Exception (bracket)
 import Control.Applicative ()
+
 
 
 binary :: String -> Op -> Ex.Assoc -> Ex.Operator String () Data.Functor.Identity.Identity Expr
@@ -57,32 +55,32 @@ decimal = do Decimal <$> decimal'
 
 variableI32 :: Parser PrimitiveType
 variableI32 = do
-    varType <- reserved "i32"
+    _ <- reserved "i32"
     return I32
 
 variableU32 :: Parser PrimitiveType
 variableU32 = do
-    varType <- reserved "u32"
+    _ <- reserved "u32"
     return U32
 
 variableI16 :: Parser PrimitiveType
 variableI16 = do
-    varType <- reserved "i16"
+    _ <- reserved "i16"
     return I16
 
 variableU16 :: Parser PrimitiveType
 variableU16 = do
-    varType <- reserved "u16"
+    _ <- reserved "u16"
     return U16
 
 variableDouble :: Parser PrimitiveType
 variableDouble = do
-    varType <- reserved "double"
+    _ <- reserved "double"
     return DOUBLE
 
 variableFloat :: Parser PrimitiveType
 variableFloat = do
-    varType <- reserved "float"
+    _ <- reserved "float"
     return FLOAT
 
 parsePrimitive :: Parser PrimitiveType
@@ -91,11 +89,10 @@ parsePrimitive = do
 
 variablePtr :: Parser Type
 variablePtr = do
-    p <- reserved "ptr"
+    _ <- reserved "ptr"
     ptrType <- angles $ try variablePtr <|> (Primitive <$> parsePrimitive)
     return $ Ptr ptrType
 
--- awful
 variableVec :: Parser Type
 variableVec = do
     reserved "vec"
@@ -131,7 +128,7 @@ function = do
 call :: Parser Expr
 call = do
     name <- identifier
-    args <- parens $ commaSep variableDef
+    args <- parens $ commaSep variable
     return $ Call name args
 
 ifelse :: Parser Expr
@@ -198,9 +195,6 @@ contents p = do
 
 toplevel :: Parser [Expr]
 toplevel = many $ do defn
-
-parseExpr :: String -> Either ParseError Expr
-parseExpr = parse (contents expr) "<stdin>"
 
 parseToplevel :: String -> Either ParseError [Expr]
 parseToplevel = parse (contents toplevel) "<stdin>"

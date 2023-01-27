@@ -42,6 +42,7 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -fno-warn-missing-signatures
 
 library:
   source-dirs: src
@@ -78,4 +79,8 @@ tests:
     - parsec
     - haskeline
     - mtl
+    - test-framework
+    - test-framework-hunit
+    - tasty
+    - tasty-hunit
  

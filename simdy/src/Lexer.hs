@@ -2,11 +2,6 @@ module Lexer (lexer, parens, identifier, reserved, reservedOp, int', commaSep, b
 
 import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
-import Text.Parsec.Char (oneOf, char, digit, satisfy)
-import Text.Parsec.Combinator (many1, choice, chainl1)
-import Control.Applicative ((<|>), many)
-import Control.Monad (void)
-import Data.Char (isLetter, isDigit)
 
 import qualified Text.Parsec.Token as Tok
 
@@ -53,9 +48,6 @@ angles = Tok.angles lexer
 
 commaSep :: Parser a -> Parser [a]
 commaSep = Tok.commaSep lexer
-
-semiSep :: Parser a -> Parser [a]
-semiSep = Tok.semiSep lexer
 
 identifier :: Parser String
 identifier = Tok.identifier lexer

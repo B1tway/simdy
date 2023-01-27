@@ -1,7 +1,4 @@
 module Syntax (Expr(..), Op(..), Type(..), PrimitiveType(..), Name, UnaryOp(..), MemoryOp(..)) where
-import Data.Semigroup (Min(Min))
-import GHC.Generics (Associativity(LeftAssociative))
-
 type Name = String
 
 data Expr 

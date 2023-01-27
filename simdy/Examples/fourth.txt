@@ -1,4 +1,0 @@
-func foo(array:vec<2,u32>) {
-    addr:ptr<u32> = 2
-    store<u32>(addr, 0)
-}
