@@ -1,0 +1,11 @@
+// RUN: simdy-exe < %s | FileCheck %s
+
+// CHECK: foo
+func foo(a: i32, b: i32) {
+    // CHECK: alloca i32
+    // CHECK: alloca i32
+    // CHECK: alloca i32
+    // CHECK: add i32
+    t : i32 = a + b
+    // CHECK: ret void
+}

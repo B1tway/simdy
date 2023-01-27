@@ -1,28 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS -fno-warn-incomplete-uni-patterns#-}
 
-module ASTBridge where
+module ASTBridge(findOperation, toLLVMType, getElemType) where
 
 import           Data.Map.Strict                 ((!))
 import qualified Data.Map.Strict                 as Map
 import Data.Word (Word32)
 import           LLVM.AST.Operand
 import           LLVM.AST.Type
-import           LLVM.IRBuilder.Constant         hiding (double)
+import           LLVM.IRBuilder.Constant()
 import           LLVM.IRBuilder.Instruction      hiding (load, store)
-import           LLVM.IRBuilder.Module
 import           LLVM.IRBuilder.Monad
 
 import qualified LLVM.AST.FloatingPointPredicate as FPredicats
 import qualified LLVM.AST.IntegerPredicate       as IPredicats
 
 import           Syntax as Syn
-import Data.ByteString.Short (toShort)
-import qualified Data.Kind as LLVM.AST
+
+
 
 
 getElemType::LLVM.AST.Type.Type -> LLVM.AST.Type.Type
-getElemType (LLVM.AST.Type.IntegerType t) = i32
-getElemType (LLVM.AST.Type.FloatingPointType  t) = float
+getElemType (LLVM.AST.Type.IntegerType _) = i32
+getElemType (LLVM.AST.Type.FloatingPointType  _) = float
 getElemType (LLVM.AST.Type.VectorType _ t) = getElemType t
 getElemType t = t
 
@@ -48,8 +48,6 @@ toLLVMType (Primitive t) = typeMap ! t
 toLLVMType (Ptr t) = ptr (toLLVMType t)
 toLLVMType (VectType e t) = VectorType {nVectorElements = exprToInt e, elementType = typeMap ! t}
 
-cmpOps :: [String]
-cmpOps = [">", "<", "==", "!=", "<=", ">="]
 
 opTable ::
      MonadIRBuilder m
@@ -82,6 +80,8 @@ opTable =
           , (NotEqual, fcmp FPredicats.ONE)
           ]
         ]
+     
+      
 
 
 findOperation :: MonadIRBuilder m => LLVM.AST.Type.Type -> Op -> Operand -> Operand -> m Operand

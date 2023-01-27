@@ -1,27 +1,17 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecursiveDo #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-unused-matches #-}
 
-module Emit where
-import LLVM.Module
-import LLVM.Context
+module Emit(buildFunction, parseTopLevel, buildIR, printIR) where
 import LLVM.Pretty (ppllvm)
 import qualified Data.Text.Lazy.IO as TLIO
 
 import qualified LLVM.AST as AST
-import qualified LLVM.AST.Constant as C
-import qualified LLVM.AST.Float as F
-import qualified LLVM.AST.FloatingPointPredicate as FP
-import qualified LLVM.AST.IntegerPredicate as IP
 import qualified LLVM.IRBuilder.Monad
 import LLVM.IRBuilder.Instruction hiding (load, store)
-import Data.Word
-import Data.Int
-import Control.Monad.Except
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Fix
-import Control.Monad.Reader
+import Data.ByteString.Short (ShortByteString)
 import Control.Monad.State
 import qualified Data.Map as Map
 
@@ -31,14 +21,13 @@ import LLVM.AST (Type(VoidType))
 import ASTBridge
 
 import StringUtils
-import LLVM.AST.Typed (getElementType, Typed (typeOf), getElementPtrType)
-import LLVM.AST.Type (i32, float, void, i64)
+import LLVM.AST.Typed (Typed (typeOf))
+import LLVM.AST.Type (i64)
 import BuilderUtils
 import LLVM.IRBuilder (int32, double)
-import Syntax (PrimitiveType(I32))
 import LLVM.IRBuilder.Module
 import LLVM.IRBuilder.Monad
-import qualified Syntax as Syn
+
 
 type NameMap = Map.Map String AST.Operand
 initNameMap :: NameMap
@@ -81,11 +70,7 @@ emit var@(Syn.DefVar varname vartype) =
 emit (Syn.BinOp Syn.Assign a@(Syn.DefVar varname vartype) b) =
     do
         varOperand <- emit a
-        varMap <- get
-        let varAddress = varMap Map.! varname
-        value <- emit b
-        store varAddress value
-        return value
+        getVar b varname
 emit (Syn.BinOp Syn.Assign a@(Syn.Variable varname) b) =
     do
         -- varOperand <- emit a
@@ -122,12 +107,16 @@ emit (Syn.MemOp (Syn.Load stype sptr svalue)) =
         value <- emit svalue
         sextValue <- sext value i64
         temp <- allocate (toLLVMType stype)
-        newAddr <- gep ptr ([sextValue])
+        newAddr <- gep ptr [sextValue]
         load newAddr
 emit expr = error ("Impossible expression <" ++ show expr ++ ">")
 
+emitExit :: MonadIRBuilder m => p -> m AST.Name
 emitExit resultPointer = block `named` bodyLabel
 
+buildBranch :: (MonadIRBuilder m, MonadFix m, MonadModuleBuilder m,
+ MonadState NameMap m) =>  ShortByteString
+ -> [Syn.Expr] -> p -> Maybe AST.Name -> m AST.Name
 buildBranch name codeBlock resultPointer mNext =
   do
     branch <- block `named` name
@@ -145,11 +134,13 @@ buildCodeBlock exprBlock = do
   ops <- mapM emit exprBlock
   return (last ops)
 
--- funcBodyBuilder :: (MonadFix m, MonadIRBuilder m) => [Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
-funcBodyBuilder :: (MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadState NameMap m) =>[Syn.Expr] -> [Syn.Expr] -> ([AST.Operand] -> m ())
+
+funcBodyBuilder :: (MonadIRBuilder m, MonadState NameMap m, MonadFix m,
+ MonadModuleBuilder m) =>
+ [Syn.Expr] -> [Syn.Expr] -> p -> m ()
 funcBodyBuilder bodyTokens args = funcBody
     where funcBody argsOperands = do
-            named block bodyLabel
+            namedBlock <- block `named` bodyLabel
             allocArgs args
             result <- buildCodeBlock bodyTokens
             retVoid
@@ -164,11 +155,9 @@ allocArgs (e@(Syn.DefVar varname vartype) : exprs) = do
   allocArgs exprs
 allocArgs [] = pure ()
 
-
--- buildFunction :: MonadModuleBuilder m => Syn.Expr -> m AST.Operand
 buildFunction :: (MonadFix m, MonadModuleBuilder m,
  MonadState (Map.Map String AST.Operand) m) => Syn.Expr -> m AST.Operand
-buildFunction func@(Syn.Function name argsNames body) =
+buildFunction (Syn.Function name argsNames body) =
   function(AST.Name fname) fargs VoidType funcBody
   where
     fname = toShort' name
@@ -187,3 +176,14 @@ buildIR exprs = evalState (buildModuleT "program" $ parseTopLevel exprs) initNam
 
 printIR :: AST.Module -> IO ()
 printIR ir = TLIO.putStrLn $ ppllvm ir
+
+
+
+getVar :: (MonadState NameMap m, MonadModuleBuilder m, MonadIRBuilder m,
+ MonadFix m) => Syn.Expr -> String -> m AST.Operand
+getVar varnode varname = do
+      varMap <- get
+      let varAddress = varMap Map.! varname
+      value <- emit varnode
+      store varAddress value
+      return value

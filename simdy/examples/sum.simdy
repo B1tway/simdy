@@ -1,0 +1,8 @@
+func foo(a:vec<8, i32>, b:vec<8, i32>, c : ptr<i32>) {
+    sum : vec<8, i32> = a + b
+    t : i32 = 10
+    if(t > 0) {
+        sum = sum + sum
+    }
+    store<i32>(c, sum)
+}
