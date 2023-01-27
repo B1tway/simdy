@@ -188,7 +188,7 @@ func foo(a:vec<8, i32>, b:vec<8, i32>, c : ptr<i32>) {
 }
 
 ```
-### LLVM-IR
+### LLVM IR
 ```llvm
 define external ccc  void @foo(<8 x i32>  %arg_a_0, <8 x i32>  %arg_b_0, i32*  %arg_c_0)    {
 Body_0:
