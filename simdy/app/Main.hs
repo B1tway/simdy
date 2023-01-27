@@ -13,13 +13,11 @@ process :: String -> IO ()
 process line =
     do
         let res = parseToplevel line
-        case res of
-            Left err -> print err
-            Right ex -> do
+        let translate ex = do
+                let ir = buildIR ex
                 printIR ir
                 writeObject (File ("output.o" :: FilePath)) ir
-                where
-                    ir = buildIR ex
+        either print translate res 
 
 -- Right ex -> mapM_ print ex
 
